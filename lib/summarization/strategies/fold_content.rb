@@ -124,6 +124,7 @@ module DiscourseAi
             I'm NOT interested in anything other than the concatenated summary, don't include additional text or comments.
             You understand and generate Discourse forum Markdown.
             You format the response, including links, using Markdown.
+            Please reply in Chinese.
           TEXT
 
           prompt.push(type: :user, content: <<~TEXT.strip)
@@ -145,6 +146,7 @@ module DiscourseAi
             - You understand and generate Discourse forum Markdown; including links, _italics_, **bold**.
             - Maintain the original language of the text being summarized.
             - Aim for summaries to be 400 words or less.
+            - Please reply in Chinese.
 
           TEXT
 
