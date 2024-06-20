@@ -6,7 +6,7 @@ module DiscourseAi
       requires_plugin ::DiscourseAi::PLUGIN_NAME
 
       def index
-        llms = LlmModel.all
+        llms = LlmModel.all.order(:display_name)
 
         render json: {
                  ai_llms:
@@ -43,6 +43,7 @@ module DiscourseAi
         llm_model = LlmModel.find(params[:id])
 
         if llm_model.update(ai_llm_params)
+          llm_model.toggle_companion_user
           render json: llm_model
         else
           render_json_error llm_model
@@ -52,12 +53,7 @@ module DiscourseAi
       def destroy
         llm_model = LlmModel.find(params[:id])
 
-        dependant_settings = %i[ai_helper_model ai_embeddings_semantic_search_hyde_model]
-
-        in_use_by = []
-        dependant_settings.each do |s_name|
-          in_use_by << s_name if SiteSetting.public_send(s_name) == "custom:#{llm_model.id}"
-        end
+        in_use_by = DiscourseAi::Configuration::LlmValidator.new.modules_using(llm_model)
 
         if !in_use_by.empty?
           return(
@@ -84,11 +80,7 @@ module DiscourseAi
 
         llm_model = LlmModel.new(ai_llm_params)
 
-        DiscourseAi::Completions::Llm.proxy_from_obj(llm_model).generate(
-          "How much is 1 + 1?",
-          user: current_user,
-          feature_name: "llm_validator",
-        )
+        DiscourseAi::Configuration::LlmValidator.new.run_test(llm_model)
 
         render json: { success: true }
       rescue DiscourseAi::Completions::Endpoints::Base::CompletionFailed => e
@@ -106,6 +98,7 @@ module DiscourseAi
           :max_prompt_tokens,
           :url,
           :api_key,
+          :enabled_chat_bot,
         )
       end
     end

@@ -20,7 +20,11 @@ module DiscourseAi
       class << self
         def provider_names
           providers = %w[aws_bedrock anthropic vllm hugging_face cohere open_ai google azure]
-          providers << "ollama" if Rails.env.development?
+          if !Rails.env.production?
+            providers << "fake"
+            providers << "ollama"
+          end
+
           providers
         end
 
@@ -135,7 +139,7 @@ module DiscourseAi
           dialect_klass = DiscourseAi::Completions::Dialects::Dialect.dialect_for(model_name)
 
           if @canned_response
-            if @canned_llm && @canned_llm != model_name
+            if @canned_llm && @canned_llm != [provider_name, model_name].join(":")
               raise "Invalid call LLM call, expected #{@canned_llm} but got #{model_name}"
             end
 
