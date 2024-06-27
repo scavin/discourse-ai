@@ -3,6 +3,7 @@
 class LlmModel < ActiveRecord::Base
   FIRST_BOT_USER_ID = -1200
   RESERVED_VLLM_SRV_URL = "https://vllm.shadowed-by-srv.invalid"
+  BEDROCK_PROVIDER_NAME = "aws_bedrock"
 
   belongs_to :user
 
@@ -25,6 +26,19 @@ class LlmModel < ActiveRecord::Base
     elsif srv_model.present?
       srv_model.destroy!
     end
+  end
+
+  def self.provider_params
+    {
+      aws_bedrock: {
+        url_editable: false,
+        fields: %i[access_key_id region],
+      },
+      open_ai: {
+        url_editable: true,
+        fields: %i[organization],
+      },
+    }
   end
 
   def toggle_companion_user
@@ -71,6 +85,10 @@ class LlmModel < ActiveRecord::Base
 
   def tokenizer_class
     tokenizer.constantize
+  end
+
+  def lookup_custom_param(key)
+    provider_params&.dig(key)
   end
 end
 
